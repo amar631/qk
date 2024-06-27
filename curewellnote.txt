@@ -1,0 +1,720 @@
+curewell_service
+---------------------------
+import { Injectable } from '@angular/core';
+import { Doctor } from '../curewell-interfaces/doctor';
+import { DoctorSpecialization } from '../curewell-interfaces/doctorspecialization';
+import { Specialization } from '../curewell-interfaces/specialization';
+import { Surgery } from '../curewell-interfaces/surgery';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CurewellService {
+
+  doctorList: Doctor[];
+  surgeryList: Surgery[];
+  specializationList: Specialization[];
+  doctorSpecializationList: DoctorSpecialization[];
+
+  constructor(private http: HttpClient) { }
+  
+  //GetDoctor
+  getDoctors(): Observable<Doctor[]> {
+    //To do implement necessary logic
+    let tempVar = this.http.get<Doctor[]>('http://localhost:50476/api/CureWell/GetDoctors').pipe(catchError(this.errorHandler));;
+    return tempVar;
+  }
+
+  //GetSpecialization
+  getAllSpecializations(): Observable<Specialization[]> {
+    //To do implement necessary logic
+    let tempVar = this.http.get<Specialization[]>('http://localhost:50476/api/CureWell/GetSpecializations').pipe(catchError(this.errorHandler));;
+    return tempVar;
+  }
+
+  //GetSurgeries
+  getAllSurgeriesForToday(): Observable<Surgery[]> {
+    let tempVar = this.http.get<Surgery[]>('http://localhost:50476/api/CureWell/GetAllSurgeryTypeForToday').pipe(catchError(this.errorHandler));;
+    return tempVar;
+  }
+
+  //AddDoctor
+  addDoctor(doctorName: string): Observable<boolean> {
+    //To do implement necessary logic
+    var doctObj: Doctor;
+    doctObj = { doctorId:0, doctorName: doctorName };
+    return this.http.post<boolean>('http://localhost:50476/api/CureWell/AddDoctor', doctObj).pipe(catchError(this.errorHandler));
+  }
+
+  //EditDoctor
+  editDoctorDetails(doctorId: number, doctorName: string): Observable<boolean> {
+    //To do implement necessary logic
+    var doctObj: Doctor;
+    doctObj = { doctorId: doctorId, doctorName: doctorName };
+    return this.http.put<boolean>('http://localhost:50476/api/CureWell/UpdateDoctorDetails', doctObj).pipe(catchError(this.errorHandler));
+  }
+  
+
+  //editSurgery
+  editSurgery(doctorId: number, endTime: number, startTime: number, surgeryCategory: string, surgeryDate: Date, surgeryId: number): Observable<boolean> {
+    //To do implement necessary logic
+    var surObj: Surgery;
+    surObj = { doctorId: doctorId, endTime: endTime, startTime: startTime, surgeryCategory: surgeryCategory, surgeryDate: surgeryDate, surgeryId: surgeryId };
+    return this.http.put<boolean>('http://localhost:50476/api/CureWell/UpdateSurgery', surObj).pipe(catchError(this.errorHandler));
+  }
+
+  //RemoveDoctor
+  deleteDoctor(doctor: Doctor) {
+    //To do implement necessary logic
+   
+
+    let httpOptions = { headers: new HttpHeaders({ 'Content-Type': 'application/json' }), body: doctor };
+    return this.http.delete<boolean>('http://localhost:50476/api/CureWell/DeleteDoctor', httpOptions).pipe(catchError(this.errorHandler));
+  }
+  
+
+  //ErrorHandler
+  errorHandler(error: HttpErrorResponse) {
+    //To do implement necessary logic
+    console.error(error);
+    return throwError(error.message || 'ERROR')
+
+  }
+
+}
+
+add.comoponent
+-----------------------------------
+import { Component, OnInit } from '@angular/core';
+import { NgForm } from '@angular/forms';
+import { CurewellService } from '../../curewell-services/curewell.service';
+import { Doctor } from '../../curewell-interfaces/doctor';
+import { DoctorSpecialization } from '../../curewell-interfaces/doctorspecialization';
+import { Specialization } from '../../curewell-interfaces/specialization';
+import { Surgery } from '../../curewell-interfaces/surgery';
+import { Router } from '@angular/router';
+
+@Component({
+  templateUrl: './add-doctor.component.html'
+})
+export class AddDoctorComponent implements OnInit {
+
+  doctorId: number;
+  doctorName: string;
+  status: boolean;
+  errorAddMsg: string;
+  showDiv: boolean = false;
+  msg: string;
+
+  constructor(private _curewellService: CurewellService, private router: Router) { }
+
+  ngOnInit() {
+  }
+
+  addDoctor(doctorName: string) {
+    //To do implement necessary logic
+    this._curewellService.addDoctor(doctorName)
+      .subscribe(
+        responseProductData => {
+          this.status = responseProductData;
+
+          this.showDiv = true;
+          if (responseProductData) {
+            this.msg = "doctor sucessfully added"
+
+          }
+        },
+        responseProductError => {
+          this.errorAddMsg = responseProductError,
+            this.msg = "some error occured"
+          alert(this.msg);
+        },
+        () => console.log("doctorr added completed")
+      );
+  }
+  }
+
+
+add.html
+--------------------
+<div class="row title">
+  <h2 align="center">Add a new Doctor</h2>
+</div>
+<!--Add angular form logic here-->
+<form align="center" #addDoctorForm="ngForm" (ngSubmit)="addDoctor(doctorname.value)">
+  <table align="center">
+    <tr>
+      <th align="justify"> <label>Doctor Name</label> </th>
+      <th>
+        <!--Add angular form logic here-->
+        <input type="text" id="add_doctorName" class="form-control cwinput"#doctorname="ngModel" [ngModel]="doctorName" name="doctorName" ngModel required>
+        
+        <!--<div id="add_validate_doctorName" class="text-danger-validation">-->
+          <!--Add validation logic here-->
+          <div id="add_validate_doctorName" *ngIf="doctorname.errors && (doctorname.dirty || doctorname.touched)" class="text-danger-validation" style="color:red; text-align:center" >
+            <div [hidden]="!doctorname.errors.required">
+              <br />
+              Name is required.
+            </div>
+        <!--</div>-->
+      </th>
+    </tr>
+    <tr>
+      <th></th>
+      <th align="justify">
+        <button class="btn" type="submit" [disabled]="ToggleButton">Add Doctor</button>&nbsp;&nbsp;
+        <a routerLink="/class" routerLinkActive="active">Cancel</a>
+      </th>
+
+  </table>
+  <div *ngIf="showDiv" style="color:red;text-align:center;">
+    {{msg}}
+  </div>
+</form>
+
+
+update.doctor.component
+----------------------------------------------------
+import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { Injectable } from '@angular/core';
+import { CurewellService } from '../../curewell-services/curewell.service';
+import { Doctor } from '../../curewell-interfaces/doctor';
+import { parse } from 'querystring';
+
+@Component({
+  templateUrl: './update-doctor.component.html'
+})
+export class UpdateDoctorComponent implements OnInit {
+
+  doctorId: number;
+  doctorName: string;
+  status: boolean;
+  errorMsg: string;
+
+  constructor(private route: ActivatedRoute, private _cureWellService: CurewellService, private router: Router) { }
+
+  ngOnInit() {
+    //To do implement necessary logic
+    this.doctorId = parseInt(this.route.snapshot.params['doctorId']);
+    this.doctorName = this.route.snapshot.params['doctorName'];
+  }
+
+  editDoctorDetails(doctorname: string) {
+    //To do implement necessary logic
+    this._cureWellService.editDoctorDetails(this.doctorId, doctorname).subscribe(
+      responseUpdateCartStatus => {
+        this.status = responseUpdateCartStatus;
+        if (this.status) {
+          alert("details updated successfully.");
+         this.router.navigate(['/viewDoctors']);
+        }
+        else {
+          alert("Some error occured, please try after some time.");
+          this.router.navigate(['/viewDoctors']);
+        }
+      },
+      responseUpdateCartError => {
+        this.errorMsg = responseUpdateCartError;
+        console.log(this.errorMsg);
+        alert("Some error occured, please try after some time.");
+        this.router.navigate(['/viewDoctors']);
+      },
+      () => console.log("Update method executed successfully.")
+    );
+  }
+}
+
+update.doctore.html
+---------------------------
+<div class="myContent">
+  <div class="container">
+    <!--Add angular form logic here-->
+    <form #updateDoctorForm="ngForm" (ngSubmit)="editDoctorDetails(doctorname.value)">
+      <h2 style="text-align:center">Update Doctor</h2>
+      <h6 style="text-align:center;color:dimgrey;font-size:small">All fields are mandatory</h6>
+      <table align="center">
+        <tr>
+          <th align="justify"> <label>Doctor Id</label> </th>
+          <th>
+            <input type="text" id="doctorID" name="doctorId" #docId="ngModel" [ngModel]="doctorId"  class="form-control qkinput" readonly>
+          </th>
+        </tr>
+        <tr></tr>
+        <tr></tr>
+        <tr></tr>
+        <tr>
+          <th align="justify"> <label>Doctor Name</label> </th>
+          <th>
+            <!--Add angular form logic here-->
+            <input type="text" id="docname" class="form-control qkinput" name="doctorname" #doctorname="ngModel" ngModel required>
+            <!--Add your validation logic here-->
+            <div *ngIf="doctorname.errors && (doctorname.dirty || doctorname.touched)" class="text-danger-validation">
+              <div [hidden]="!doctorname.errors.required">
+                <br />
+                Name is required.
+              </div>
+            </div>
+          </th>
+        </tr>
+        <tr></tr>
+        <tr></tr>
+        <tr></tr>
+        <tr>
+          <th></th>
+          <th>
+            <div class="form-group" style="text-align:left">
+              <button type="submit" [disabled]="!updateDoctorForm.form.valid" class="btn">Update</button> &nbsp;&nbsp;
+              <a routerLink="/viewDoctors">Cancel</a>
+            </div>
+          </th>
+        </tr>
+      </table>
+    </form>
+  </div>
+</div>
+
+
+
+update.surgery.component
+---------------------------------------
+import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { Injectable } from '@angular/core';
+import { CurewellService } from '../../curewell-services/curewell.service';
+import { Surgery } from '../../curewell-interfaces/surgery';
+import { parse } from 'querystring';
+
+@Component({
+  templateUrl: './update-surgery.component.html'
+})
+export class UpdateSurgeryComponent implements OnInit {
+
+  doctorId: number;
+  surgeryId: number;
+  surgeryDate: Date;
+  startTime: number;
+  endTime: number;
+  surgeryCategory: string;
+  status: boolean;
+  errorMsg: string;
+
+  constructor(private route: ActivatedRoute, private _cureWellService: CurewellService, private router: Router) { }
+
+  ngOnInit() {
+    //To do implement necessary logic
+    this.doctorId = parseInt(this.route.snapshot.params['doctorId']);
+    this.surgeryId = parseInt(this.route.snapshot.params['surgeryId']);
+    this.surgeryDate = new Date(this.route.snapshot.params['surgeryDate']);
+    this.startTime = parseInt(this.route.snapshot.params['startTime']);
+    this.endTime = parseInt(this.route.snapshot.params['endTime']);
+    this.surgeryCategory = this.route.snapshot.params['surgeryCategory'];
+  }
+
+  editSurgery(startTime: number, endTime: number) {
+    //To do implement necessary logic
+    this._cureWellService.editSurgery(this.doctorId, endTime, startTime, this.surgeryCategory, this.surgeryDate, this.surgeryId).subscribe(
+      responseUpdateCartStatus => {
+        this.status = responseUpdateCartStatus;
+        if (this.status) {
+          alert("details updated successfully.");
+          this.router.navigate(['/viewTodaySurgery']);
+        }
+        else {
+          alert("Some error occured, please try after some time.");
+          this.router.navigate(['/viewTodaySurgery']);
+        }
+      },
+      responseUpdateCartError => {
+        this.errorMsg = responseUpdateCartError;
+        console.log(this.errorMsg);
+        alert("Some error occured, please try after some time.");
+        this.router.navigate(['/viewTodaySurgery'])
+      },
+      () => console.log("Update method executed successfully.")
+    );
+  }
+}
+
+
+update.surgery.html
+------------------------------------
+<div class="myContent">
+  <div class="container">
+    
+    <h2 align="justify" style="color:brown">Update Surgery</h2>
+    <!--Add angular form logic here-->
+    <form #updateSurgeryForm="ngForm" (ngSubmit)="editSurgery(startTime.value,endTime.value)" >
+      <div class="row">
+        <div class="col-md-4">
+        </div>
+        <div class="col-md-4">
+          <div class="form-group">
+            <div class="col" style="text-align:left">
+              <label>Surgery Id</label>
+            </div>
+            <div class="col; input-group">
+              <!--Add angular form logic here-->
+              <input type="text" name="surgeryId" class="form-control qkinput" id="surgeryID" #surId="ngModel"[ngModel]="surgeryId" readonly>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="col" style="text-align:left">
+              <label>Doctor Id</label>
+            </div>
+            <div class="col; input-group">
+              <!--Add angular form logic here-->
+              <input type="text" name="doctorId" class="form-control qkinput" id="doctorID" #docId="ngModel"[ngModel]="doctorId" readonly>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="col" style="text-align:left">
+              <label>Surgery Date</label>
+            </div>
+            <div class="col; input-group">
+              <!--Add angular form logic here-->
+              <input type="text" name="surgeryDate" class="form-control qkinput" id="surgeryDate" #surgDate="ngModel"[ngModel]="surgeryDate" readonly>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="col" style="text-align:left">
+              <label>Start Time(24 Hours Format)</label>
+            </div>
+            <div class="col; input-group">
+              <!--Add angular form logic here-->
+              <input type="number" name="starttime" class="form-control qkinput" id="starttime" #startTime="ngModel" ngModel required>
+              <!--Add angular validation logic here-->
+              <div *ngIf="startTime.errors && (startTime.dirty || startTime.touched)" class="text-danger-validation"style="color:red; text-align:center">
+                <div [hidden]="!startTime.errors.required">
+                  <br />
+                  startTime is required.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="col" style="text-align:left">
+              <label>End Time(24 Hours Format)</label>
+            </div>
+            <div class="col; input-group">
+              <!--Add angular form logic here-->
+              <input type="number" name="endtime" class="form-control qkinput" id="endtime" #endTime="ngModel" ngModel required>
+              <!--Add angular validation logic here-->
+              <div *ngIf="endTime.errors && (endTime.dirty || endTime.touched)" class="text-danger-validation" style="color:red; text-align:center">
+                <div [hidden]="!endTime.errors.required">
+                  <br />
+                  endTime is required.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="col" style="text-align:left">
+              <label>Surgery Category</label>
+            </div>
+            <div class="col; input-group">
+              <!--Add angular form logic here-->
+              <input type="text" name="surgeryCategory" class="form-control qkinput" id="surgeryCategory" #surgCategory="ngModel"[ngModel]="surgeryCategory" readonly>
+            </div>
+          </div>
+
+          <div class="form-group" style="text-align:left">
+            <button type="submit" [disabled]="!updateSurgeryForm.form.valid" class="btn">Update</button> &nbsp;&nbsp;
+            <a routerLink="/viewTodaySurgery">Cancel</a>
+          </div>
+        </div>
+        <div class="col-md-4">
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+view.doctor.component
+------------------------------
+import { Component, OnInit, DoCheck } from '@angular/core';
+import { Doctor } from '../../curewell-interfaces/doctor';
+import { CurewellService } from '../../curewell-services/curewell.service';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from "@angular/common/http";
+import { Route } from '@angular/compiler/src/core';
+
+@Component({
+  templateUrl: './view-doctor.component.html',
+})
+export class ViewDoctorComponent implements OnInit {
+
+  doctorList: Doctor[];
+  showMsgDiv: boolean = false;
+  doctorId: number;
+  errorMsg: string;
+  status: boolean;
+
+  constructor(private _curewellService: CurewellService, private router: Router) { }
+
+  ngOnInit() {
+    //To do implement necessary logic
+    this.getDoctor();
+
+    if (this.doctorList == null) {
+      this.showMsgDiv = true;
+    }
+
+  }
+
+  getDoctor() {
+    //To do implement necessary logic
+    this._curewellService.getDoctors().subscribe(
+      responseProductData => {
+        this.doctorList = responseProductData;
+
+        this.showMsgDiv = false;
+      },
+      responseProductError => {
+        this.doctorList = null;
+        this.errorMsg = responseProductError;
+        console.log(this.errorMsg);
+      },
+      () => console.log("GetProducts method excuted successfully"));
+  }
+
+  editDoctorDetails(doctor: Doctor) {
+    //To do implement necessary logic
+    this.router.navigate(['/editDoctorDetails', doctor.doctorId, doctor.doctorName]);
+  }
+
+  removeDoctor(doctor: Doctor) {
+    //To do implement necessary logic
+    this._curewellService.deleteDoctor(doctor).subscribe(
+      responseRemoveCartProductStatus => {
+        this.status = responseRemoveCartProductStatus;
+        if (this.status) {
+          alert("doctor deleted successfully.");
+          this.ngOnInit();
+        }
+        else {
+          alert("doctor could not be deleted. Please try after sometime.");
+        }
+      },
+      responseRemoveCartProductError => {
+        this.errorMsg = responseRemoveCartProductError;
+        alert("Something went wrong. Please try after sometime.");
+      },
+      () => console.log("delete method executed successfully")
+    );
+  }
+
+}
+
+view.doctor.html
+-----------------------------------
+<h2 align="center">
+  View Doctor
+</h2>
+<div *ngIf="(doctorList?.length > 0)">
+  <div class="table-responsive">
+
+    <table align="center" class="table" style="border:2px solid rgba(220,230,242,1);" *ngIf="doctorList">
+      <tr style="background-color:rgba(220,230,242,1); font-size:12pt">
+        <th>Doctor Id</th>
+        <th>Doctor Name</th>
+        <th style="text-align:center" colspan="2">Action</th>
+      </tr>
+
+      <tr id='getdoctor' *ngFor="let doctor of doctorList" style="background-color:white">
+        <!--Add your logic here-->
+        <td> {{doctor.doctorId}} </td>
+        <td> {{doctor.doctorName}} </td>
+
+        <td> <button class="btn"(click)="editDoctorDetails(doctor)">Edit Doctor Details</button></td>
+        <td> <button class="btn"(click)="removeDoctor(doctor)">Delete Doctor Details</button></td>
+      </tr>
+    </table>
+
+  </div>
+</div>
+<div *ngIf="!(doctorList?.length > 0)">
+  <br/>
+  <h3 class="jumbotron" style="text-align:center;">No Doctor Available</h3>
+</div>
+
+
+
+view.specialization.component
+---------------------------------------
+import { Component, OnInit } from '@angular/core';
+import { Specialization } from '../../curewell-interfaces/specialization';
+import { CurewellService } from '../../curewell-services/curewell.service';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from "@angular/common/http";
+import { Route } from '@angular/compiler/src/core';
+import { Doctor } from '../../curewell-interfaces/doctor';
+
+@Component({
+ templateUrl: './view-specialization.component.html',
+})
+export class ViewSpecializationComponent implements OnInit {
+
+  specializationList: Specialization[];
+  showMsgDiv: boolean = false;
+  errorMsg: string;
+
+  constructor(private _curewellService: CurewellService, private router: Router) { }
+
+  ngOnInit() {
+    //To do implement necessary logic
+    this.getSpecialization();
+  }
+
+  getSpecialization() {
+    //To do implement necessary logic
+    this._curewellService.getAllSpecializations().subscribe(
+      responseProductData => {
+        this.specializationList = responseProductData;
+
+        this.showMsgDiv = false;
+      },
+      responseProductError => {
+        this.specializationList = null;
+        this.errorMsg = responseProductError;
+        console.log(this.errorMsg);
+      },
+      () => console.log("GetProducts method excuted successfully"));
+  }
+}
+
+view.specialization.html
+-----------------------------------
+<h2 align="center">
+  View Specialization
+</h2>
+<div *ngIf="(specializationList?.length > 0)">
+  <div class="table-responsive">
+
+    <table align="center" class="table" style="border:2px solid rgba(220,230,242,1);" *ngIf="specializationList">
+      <tr style="background-color:rgba(220,230,242,1); font-size:12pt">
+        <th>Specialization Code</th>
+        <th>Specialization Name</th>
+        <th style="text-align:center" colspan="1">Action</th>
+      </tr>
+
+      <tr id="get_specialization" *ngFor="let sp of specializationList" style="background-color:white">
+        <!--Add your logic here-->
+
+        <td> {{sp.specializationCode}} </td>
+        <td> {{sp.specializationName}} </td>
+        <td> <button class="btn">View Doctors</button></td>
+      </tr>
+    </table>
+
+  </div>
+</div>
+<div *ngIf="showMsgDiv">
+  <br />
+  <h3 class="jumbotron" style="text-align:center;">No Specialization Available</h3>
+</div>
+
+
+
+view.today-surgery.component
+---------------------------------------
+import { Component, OnInit } from '@angular/core';
+import { Surgery } from '../../curewell-interfaces/surgery';
+import { CurewellService } from '../../curewell-services/curewell.service';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from "@angular/common/http";
+import { Route } from '@angular/compiler/src/core';
+
+@Component({
+  templateUrl: './view-todays-surgery.component.html',
+})
+export class ViewTodaysSurgeryComponent implements OnInit {
+
+  surgeryList: Surgery[];
+  showMsgDiv: boolean = false;
+  errorMsg: string;
+
+  constructor(private _curewellService: CurewellService, private router: Router) { }
+
+  ngOnInit() {
+    //To do implement necessary logic
+    this.getTodaySurgery();
+  }
+
+  getTodaySurgery() {
+    //To do implement necessary logic
+    this._curewellService.getAllSurgeriesForToday().subscribe(
+      responseProductData => {
+        this.surgeryList = responseProductData;
+
+        this.showMsgDiv = false;
+      },
+      responseProductError => {
+        this.surgeryList = null;
+        this.errorMsg = responseProductError;
+        console.log(this.errorMsg);
+        this.showMsgDiv = true;
+      },
+      () => console.log("getTodaySurgery method excuted successfully"));
+  }
+
+  editSurgery(surgery: Surgery) {
+    //To do implement necessary logic
+    this.router.navigate(['/editSurgery', surgery.doctorId, surgery.endTime, surgery.startTime, surgery.surgeryCategory, surgery.surgeryDate,surgery.surgeryId]);
+  }
+
+}
+
+
+view.today-surgery.html
+----------------------------------------
+<h2 align="center">
+  View Today's Surgery
+</h2>
+<div *ngIf="(surgeryList?.length > 0)">
+  <div class="table-responsive">
+
+    <table align="center" class="table" style="border:2px solid rgba(220,230,242,1);">
+      <tr style="background-color:rgba(220,230,242,1); font-size:12pt">
+        <th>Surgery Id</th>
+        <th>Doctor Id</th>
+        <th>Surgery Date</th>
+        <th>End Time</th>
+        <th>Start Time</th>
+        <th>Surgery Category</th>
+        <th style="text-align:center" colspan="1">Action</th>
+      </tr>
+
+      <tr *ngFor="let item of surgeryList" id="get_today_surgery" style="background-color:white">
+
+        <td align="center">{{item.surgeryId}}</td>
+        <td align="center">{{item.doctorId}}</td>
+        <td align="center">{{item.surgeryDate | date:"dd/MM/yyyy" }}</td>
+        <td align="center">{{item.endTime}}</td>
+        <td align="center">{{item.startTime}}</td>
+        <td align="center">{{item.surgeryCategory}}</td>
+        <td>
+          <!--Add angular form logic here-->
+          <button class="btn" (click)="editSurgery(item)">Edit Surgery Time</button>
+        </td>
+      </tr>
+    </table>
+    
+  </div>
+</div>
+<div *ngIf="!(surgeryList?.length > 0)">
+  <br />
+  <h3 class="jumbotron" style="text-align:center;">No Surgery Details Available</h3>
+</div>
+
